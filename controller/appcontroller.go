@@ -1166,6 +1166,12 @@ func (ctrl *ApplicationController) processRequestedAppOperation(app *appv1.Appli
 				// Get rid of sync results and null out previous operation completion time
 				state.SyncResult = nil
 			}
+		} else if state.Phase == synccommon.OperationRunning && app.Spec.SyncPolicy.Retry.Refresh && app.Status.Sync.Revision != state.Operation.Sync.Revision {
+			logCtx.Infof("A new revision is available, terminating app, was phase: %s, message: %s", state.Phase, state.Message)
+			state.Phase = synccommon.OperationTerminating
+			state.Message = "Operation forced to terminate (new revision available)"
+			ctrl.setOperationState(app, state)
+			return
 		} else {
 			logCtx.Infof("Resuming in-progress operation. phase: %s, message: %s", state.Phase, state.Message)
 		}
